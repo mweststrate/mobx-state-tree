@@ -2,45 +2,11 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Debug unit test",
             "type": "node",
             "request": "launch",
-            "program": "${workspaceRoot}/node_modules/ava/profile.js",
-            "stopOnEntry": false,
-            "args": ["--no-power-assert", "--no-cache", "test-lib/test/${fileBasenameNoExtension}.js"],
-            "cwd": "${workspaceRoot}",
-            "preLaunchTask": "build-tests",
-            "runtimeExecutable": null,
-            "runtimeArgs": [
-                "--nolazy"
-            ],
-            "env": {
-                "NODE_ENV": "development"
-            },
-            "externalConsole": false,
-            "sourceMaps": false,
-            "outDir": null
-        },
-        {
-            "name": "Attach",
-            "type": "node",
-            "request": "attach",
-            "port": 5858,
-            "address": "localhost",
-            "restart": false,
-            "sourceMaps": false,
-            "outDir": null,
-            "localRoot": "${workspaceRoot}",
-            "remoteRoot": null
-        },
-        {
-            "name": "Attach to Process",
-            "type": "node",
-            "request": "attach",
-            "processId": "${command.PickProcess}",
-            "port": 5858,
-            "sourceMaps": false,
-            "outDir": null
+            "name": "debug unit test",
+            "program": "${workspaceRoot}/node_modules/jest/bin/jest.js",
+            "args": ["-i", "${file}"],
         }
     ]
 }

@@ -280,3 +280,114 @@ function filterRelevantStuff(stuff) {
         return x
     })
 }
+
+test("flows can be cancelled - 1 - uncatched cancellation", done => {
+    let steps = 0
+    const M = types.model({}).actions(self => ({
+        start: flow(function*() {
+            steps = 1
+            yield Promise.resolve()
+            steps = 2
+        })
+    }))
+
+    const m = M.create()
+    const promise = m.start()
+    promise.then(
+        () => fail(),
+        err => {
+            expect(steps).toBe(1)
+            expect("" + err).toBe("Error: FLOW_CANCELLED")
+            done()
+        }
+    )
+    promise.cancel()
+})
+
+test("flows can be cancelled - 2 - catch cancellation in generator", done => {
+    let steps = 0
+    const M = types.model({}).actions(self => ({
+        start: flow(function*() {
+            steps = 1
+            try {
+                yield Promise.resolve()
+                steps = 2
+            } catch (e) {
+                expect(steps).toBe(1)
+                expect(e.toString()).toBe("Error: FLOW_CANCELLED")
+                return 4
+            }
+        })
+    }))
+
+    const m = M.create()
+    const promise = m.start()
+    promise.then(
+        res => {
+            expect(res).toBe(4)
+            done()
+        },
+        err => {
+            fail()
+        }
+    )
+    promise.cancel()
+})
+
+test("flows can be cancelled - 3 - rethrow cancellation", done => {
+    let steps = 0
+    const M = types.model({}).actions(self => ({
+        start: flow(function*() {
+            steps = 1
+            try {
+                yield Promise.resolve()
+                steps = 2
+            } catch (e) {
+                expect(steps).toBe(1)
+                expect(e.toString()).toBe("Error: FLOW_CANCELLED")
+                throw e // rethrow
+            }
+        })
+    }))
+
+    const m = M.create()
+    const promise = m.start()
+    promise.then(
+        () => fail(),
+        err => {
+            expect(steps).toBe(1)
+            expect("" + err).toBe("Error: FLOW_CANCELLED")
+            done()
+        }
+    )
+    promise.cancel()
+})
+
+test("flows can be cancelled - 3 - pending Promise will be ignored", done => {
+    let steps = 0
+    const M = types.model({}).actions(self => ({
+        start: flow(function*() {
+            steps = 1
+            try {
+                yield Promise.reject("This won't be catched anywhere!") // cancel will resolve this flow before this one is throw, so this promise goes uncatched
+                steps = 2
+            } catch (e) {
+                expect(steps).toBe(1)
+                expect(e.toString()).toBe("Error: FLOW_CANCELLED")
+                throw e
+            }
+        })
+    }))
+
+    const m = M.create()
+    const promise = m.start()
+    promise.then(
+        () => fail(),
+        err => {
+            expect(steps).toBe(1)
+            expect("" + err).toBe("Error: FLOW_CANCELLED")
+            done()
+        }
+    )
+    promise.cancel()
+})
