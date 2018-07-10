@@ -142,8 +142,8 @@ Returns **IDisposer**
 
 ## applyAction
 
-Applies an action or a series of actions in a single MobX transaction.
-Does not return any value
+Applies an action(no matter it's sync or async action) or a series of actions in a single MobX transaction.
+It will return a Promise which resolves an array(Promise<any[]>).
 Takes an action description as produced by the `onAction` middleware.
 
 **Parameters**
@@ -612,7 +612,7 @@ export interface IActionRecorder {
      // stop recording actions
      stop(): any
      // apply all the recorded actions on the given object
-     replay(target: IStateTreeNode): any
+     replay(target: IStateTreeNode): Promise<any[]>
 }
 ```
 

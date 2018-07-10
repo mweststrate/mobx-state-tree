@@ -31,7 +31,7 @@ export type ISerializedActionCall = {
 export interface IActionRecorder {
     actions: ReadonlyArray<ISerializedActionCall>
     stop(): any
-    replay(target: IStateTreeNode): any
+    replay(target: IStateTreeNode): Promise<any[]>
 }
 
 function serializeArgument(node: INode, actionName: string, index: number, arg: any): any {
@@ -81,7 +81,7 @@ function serializeTheUnserializable(baseType: string) {
 export function applyAction(
     target: IStateTreeNode,
     actions: ISerializedActionCall | ISerializedActionCall[]
-): void {
+): Promise<any[]> {
     // check all arguments
     if (process.env.NODE_ENV !== "production") {
         if (!isStateTreeNode(target))
@@ -89,8 +89,26 @@ export function applyAction(
         if (typeof actions !== "object")
             fail("expected second argument to be an object or array, got " + actions + " instead")
     }
-    runInAction(() => {
-        asArray(actions).forEach(action => baseApplyAction(target, action))
+
+    return new Promise((res, rej) => {
+        runInAction(() => {
+            Promise.all(
+                asArray(actions).map(action => {
+                    let result = null
+                    try {
+                        result = baseApplyAction(target, action)
+                    } catch (err) {
+                        Promise.reject(err)
+                        fail(`Action ${action} excuted failed in ${target}`)
+                    }
+                    return result instanceof Promise ? result : Promise.resolve(result)
+                })
+            )
+                .then((val: Promise<any>[]) => res(val))
+                .catch(({ err, target, action }) => {
+                    rej(err)
+                })
+        })
     })
 }
 
@@ -126,7 +144,7 @@ function baseApplyAction(target: IStateTreeNode, action: ISerializedActionCall):
  *      // stop recording actions
  *      stop(): any
  *      // apply all the recorded actions on the given object
- *      replay(target: IStateTreeNode): any
+ *      replay(target: IStateTreeNode): Promise<any[]>
  * }
  *
  * @export
@@ -145,7 +163,7 @@ export function recordActions(subject: IStateTreeNode): IActionRecorder {
         actions: [] as ISerializedActionCall[],
         stop: () => disposer(),
         replay: (target: IStateTreeNode) => {
-            applyAction(target, recorder.actions)
+            return applyAction(target, recorder.actions)
         }
     }
     let disposer = onAction(subject, recorder.actions.push.bind(recorder.actions))

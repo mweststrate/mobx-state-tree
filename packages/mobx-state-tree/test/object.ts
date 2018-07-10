@@ -9,6 +9,7 @@ import {
     applyAction,
     applySnapshot,
     getSnapshot,
+    process,
     types
 } from "../src"
 import { autorun, reaction, observable } from "mobx"
@@ -21,9 +22,17 @@ const createTestFactories = () => {
         .actions(self => {
             function setTo(to) {
                 self.to = to
+                return to
             }
+
+            const asyncSetTo = process(function* asyncSetTo(to) {
+                self.to = yield Promise.resolve(to)
+                return to
+            })
+
             return {
-                setTo
+                setTo,
+                asyncSetTo
             }
         })
     const ComputedFactory = types
@@ -177,6 +186,22 @@ test("it should apply actions calls", () => {
         { name: "setTo", path: "", args: ["universe"] }
     ])
     expect(getSnapshot(doc)).toEqual({ to: "universe" })
+})
+test("it should change value in sync action after promise then", async () => {
+    const { Factory } = createTestFactories()
+    const doc = Factory.create()
+    await applyAction(doc, { name: "setTo", path: "", args: ["mars"] }).then(val => {
+        doc.setTo(val[0] + " universe")
+    })
+    expect(getSnapshot(doc)).toEqual({ to: "mars universe" })
+})
+test("it should change value in async action after promise then", async () => {
+    const { Factory } = createTestFactories()
+    const doc = Factory.create()
+    await applyAction(doc, { name: "asyncSetTo", path: "", args: ["mars"] }).then(val => {
+        doc.setTo(val[0] + " universe")
+    })
+    expect(getSnapshot(doc)).toEqual({ to: "mars universe" })
 })
 // === COMPUTED VALUES ===
 test("it should have computed properties", () => {
@@ -350,7 +375,7 @@ test("it should check the type correctly", () => {
     expect(Factory.is({ wrongKey: true })).toEqual(true)
     expect(Factory.is({ to: 3 })).toEqual(false)
 })
-if (process.env.NODE_ENV !== "production") {
+if (global.process.env.NODE_ENV !== "production") {
     test("it should require complex fields to be present", () => {
         expect(
             types
@@ -465,7 +490,7 @@ test("it should throw if a non-primitive value is provided and no default can be
         })
     }).toThrow()
 })
-if (process.env.NODE_ENV !== "production") {
+if (global.process.env.NODE_ENV !== "production") {
     test("it should not be possible to remove a node from a parent if it is required, see ", () => {
         const A = types.model("A", { x: 3 })
         const B = types.model("B", { a: A })
