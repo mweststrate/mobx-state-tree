@@ -745,8 +745,28 @@ export function getEnv<T = any>(target: IAnyStateTreeNode): T {
     }
     const node = getStateTreeNode(target)
     const env = node.root._environment
-    if (!!!env) return EMPTY_OBJECT as T
-    return env
+
+    return env || fail(`Failed to find the environment of ${node} ${node.path}`)
+}
+
+/**
+ * Returns whether the current state tree has environment or not.
+ *
+ * @export
+ * @param {IStateTreeNode} target
+ * @return {boolean}
+ */
+export function hasEnv(target: IAnyStateTreeNode): boolean {
+    // check all arguments
+    if (process.env.NODE_ENV !== "production") {
+        if (!isStateTreeNode(target))
+            fail("expected first argument to be a mobx-state-tree node, got " + target + " instead")
+    }
+
+    const node = getStateTreeNode(target)
+    const env = node.root._environment
+
+    return !!env
 }
 
 /**

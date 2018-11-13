@@ -1,4 +1,4 @@
-import { types, getEnv, clone, detach, unprotect } from "../../src"
+import { types, getEnv, clone, detach, unprotect, hasEnv } from "../../src"
 
 const Todo = types
     .model({
@@ -20,6 +20,7 @@ function createEnvironment() {
 test("it should be possible to use environments", () => {
     const env = createEnvironment()
     const todo = Todo.create({}, env)
+    expect(hasEnv(todo)).toBe(true)
     expect(todo.description).toBe("TEST")
     env.useUppercase = false
     expect(todo.description).toBe("test")
@@ -27,13 +28,17 @@ test("it should be possible to use environments", () => {
 test("it should be possible to inherit environments", () => {
     const env = createEnvironment()
     const store = Store.create({ todos: [{}] }, env)
+    expect(hasEnv(store.todos[0])).toBe(true)
     expect(store.todos[0].description).toBe("TEST")
     env.useUppercase = false
     expect(store.todos[0].description).toBe("test")
 })
-test("getEnv returns empty object without environment", () => {
+test("getEnv should throw error without environment", () => {
     const todo = Todo.create()
-    expect(getEnv(todo)).toEqual({})
+    expect(hasEnv(todo)).toBe(false)
+    expect(() => getEnv(todo)).toThrowError(
+        "Failed to find the environment of AnonymousModel@<root>"
+    )
 })
 test("detach should preserve environment", () => {
     const env = createEnvironment()
@@ -104,7 +109,9 @@ test("clone preserves environnment", () => {
     }
     {
         const todo = clone(store.todos[0], false)
-        expect(getEnv(todo)).toEqual({})
+        expect(() => {
+            getEnv(todo)
+        }).toThrowError("Failed to find the environment of AnonymousModel@<root>")
     }
     {
         const env2 = createEnvironment()

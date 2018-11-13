@@ -50,6 +50,7 @@ const METHODS_AND_INTERNAL_TYPES = stringToArray(`
     destroy,
     isAlive,
     addDisposer,
+    hasEnv,
     getEnv,
     walk,
     getMembers,

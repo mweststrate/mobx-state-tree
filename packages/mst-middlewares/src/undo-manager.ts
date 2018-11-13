@@ -7,6 +7,7 @@ import {
     IPatchRecorder,
     createActionTrackingMiddleware,
     getEnv,
+    hasEnv,
     getRoot,
     applyPatch,
     flow,
@@ -125,7 +126,7 @@ const UndoManager = types
                 self.undoIdx = self.history.length
             },
             afterCreate() {
-                targetStore = getEnv(self).targetStore ? getEnv(self).targetStore : getRoot(self)
+                targetStore = hasEnv(self) ? getEnv(self).targetStore : getRoot(self)
                 if (!targetStore || targetStore === self)
                     throw new Error(
                         "UndoManager should be created as part of a tree, or with `targetStore` in it's environment"
