@@ -95,7 +95,8 @@ export class IdentifierCache {
 
     resolve<IT extends IAnyComplexType>(
         type: IT,
-        identifier: string
+        identifier: string,
+        unique = true
     ): ObjectNode<IT["CreationType"], IT["SnapshotType"], IT["TypeWithoutSTN"]> | null {
         const set = this.cache.get(identifier)
         if (!set) return null
@@ -106,13 +107,17 @@ export class IdentifierCache {
             case 1:
                 return matches[0]
             default:
-                throw fail(
-                    `Cannot resolve a reference to type '${
-                        type.name
-                    }' with id: '${identifier}' unambigously, there are multiple candidates: ${matches
-                        .map(n => n.path)
-                        .join(", ")}`
-                )
+                if (unique) {
+                    throw fail(
+                        `Cannot resolve a reference to type '${
+                            type.name
+                        }' with id: '${identifier}' unambigously, there are multiple candidates: ${matches
+                            .map(n => n.path)
+                            .join(", ")}`
+                    )
+                } else {
+                    return matches[0]
+                }
         }
     }
 }

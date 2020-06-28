@@ -517,17 +517,22 @@ export function resolvePath(target: IAnyStateTreeNode, path: string): any {
 
 /**
  * Resolves a model instance given a root target, the type and the identifier you are searching for.
+ * By default it throws error if there is more then one instance found (i.e. instance is not unique).
+ * This can be overriden by last optional parameter set to false, in which case it will return the
+ * first instance found.
  * Returns undefined if no value can be found.
  *
  * @param type
  * @param target
  * @param identifier
+ * @param unique
  * @returns
  */
 export function resolveIdentifier<IT extends IAnyModelType>(
     type: IT,
     target: IAnyStateTreeNode,
-    identifier: ReferenceIdentifier
+    identifier: ReferenceIdentifier,
+    unique = true
 ): IT["Type"] | undefined {
     // check all arguments
     assertIsType(type, 1)
@@ -536,7 +541,8 @@ export function resolveIdentifier<IT extends IAnyModelType>(
 
     const node = getStateTreeNode(target).root.identifierCache!.resolve(
         type,
-        normalizeIdentifier(identifier)
+        normalizeIdentifier(identifier),
+        unique
     )
     return node ? node.value : undefined
 }
