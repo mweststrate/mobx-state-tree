@@ -180,6 +180,58 @@ test("961 - apply snapshot to union should not throw when union keeps models wit
     applySnapshot(u, getSnapshot(Bar.create()))
 })
 
+test("1648 - applying a snapshot to a maybe, array, union works", () => {
+    const SingleFilter = types.model("SingleFilter", {
+        field: types.maybeNull(types.string),
+        operator: types.maybeNull(types.string),
+        value: types.maybeNull(types.string)
+    })
+
+    const MultipleFilter: any = types.model("MultipleFilter", {
+        filters: types.array(
+            types.union(
+                SingleFilter,
+                types.late(() => MultipleFilter)
+            )
+        )
+    })
+
+    const Filter = types.union(SingleFilter, MultipleFilter)
+
+    const Group = types.model("Group", {
+        name: types.maybeNull(types.string),
+        priority: types.number,
+        filter: Filter
+    })
+
+    const group = Group.create({
+        name: "New group",
+        priority: 1,
+        filter: {
+            filters: [
+                {
+                    filters: [
+                        { field: "chat_channel", value: "some channel", operator: "=" },
+                        { field: "eq_utm_term", value: "11121", operator: "=" }
+                    ],
+                    condition: "and"
+                },
+                {
+                    filters: [
+                        { field: "tags", value: "some tag 1", operator: "=" },
+                        { field: "tags", value: "some tag 2", operator: "=" },
+                        { field: "tags", value: "some tag 3", operator: "=" }
+                    ],
+                    condition: "or"
+                }
+            ],
+            condition: "or"
+        }
+    })
+
+    expect(group.filter.field).not.toBeNull()
+})
+
 describe("1045 - secondary union types with applySnapshot and ids", () => {
     function initTest(useCreate: boolean, submodel1First: boolean, type: number) {
         setLivelinessChecking("error")
