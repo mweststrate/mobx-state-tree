@@ -23,6 +23,7 @@ import {
     identifier,
     identifierNumber,
     late,
+    lazy,
     undefinedType,
     nullType,
     snapshotProcessor
@@ -54,5 +55,6 @@ export const types = {
     late,
     undefined: undefinedType,
     null: nullType,
-    snapshotProcessor
+    snapshotProcessor,
+    lazy
 }
